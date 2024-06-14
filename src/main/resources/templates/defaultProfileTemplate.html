@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Profile Card</title>
+    <style>
+        .profile-card {
+            padding: 40px;
+            margin: 0 auto;
+            width: 100%;
+            font-family: Arial, sans-serif;
+        }
+        .head {
+            display: block;
+        }
+        .user_data {
+            display: inline-block;
+            width: 50%;
+            vertical-align: top;
+        }
+        .user_img {
+            width: 49%;
+            display: inline-block;
+        }
+        img {
+            width: 200px;
+            margin-left: 64px;
+        }
+        h2 {
+            color: #333;
+            font-size: 24px;
+            margin: 10px 0;
+        }
+        p {
+            color: #666;
+            font-size: 16px;
+            margin: 5px 0;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+            font-size: 14px;
+        }
+        li {
+            margin: 5px 0;
+        }
+        h3 {
+            padding-bottom: 5px;
+            color: #333;
+        }
+        h4 {
+            color: #444;
+            font-size: 18px;
+            margin: 10px 0 5px 0;
+        }
+        h5 {
+            color: #555;
+            font-size: 16px;
+            margin: 5px 0;
+        }
+        .inline {
+            display: inline;
+        }
+    </style>
+</head>
+<body>
+<div class="profile-card">
+    <div class="head">
+        <div class="user_data">
+            <h2>{{firstName}} {{lastName}}</h2>
+            <p>Email: {{email}}</p>
+            <p>Date of birth: {{bornOn}}</p>
+            <p>Location: {{location}}</p>
+            <p>{{description}}</p>
+            <ul>
+                <!-- Loop Start {{links}} -->
+                <li><b>{{web_label}}</b>: {{link}}</li>
+                <!-- Loop End {{links}} -->
+            </ul>
+        </div>
+        <div class="user_img">
+            <img src="{{avatar}}" alt="Profile Picture">
+        </div>
+    </div>
+
+    <h2>Erfahrungen</h2>
+    <ul id="knowledge-category-list">
+        <!-- Loop Start {{categoriesList}} -->
+        <h3>{{category_name}}</h3>
+        <div>
+            <!-- Loop Start {{knowledgeList}} -->
+            <p class="inline">{{knowledge_name}},</p>
+            <!-- Loop End {{knowledgeList}} -->
+        </div>
+        <!-- Loop End {{categoriesList}} -->
+    </ul>
+
+    <h2>Projects</h2>
+    <!-- Loop Start {{Projects}} -->
+    <div>
+        <h3>{{project_customer}}</h3>
+        <h4>{{project_name}}</h4>
+        <p>Description:</p>
+        <p>{{project_description}}</p>
+        <p>Start: {{project_start}}</p>
+        <p>End: {{project_end}}</p>
+        <h5>Knowledges</h5>
+        <div>
+            <!-- Loop Start {{knowledgeList}} -->
+            <p class="inline">{{knowledge_name}},</p>
+            <!-- Loop End {{knowledgeList}} -->
+        </div>
+    </div>
+    <!-- Loop End {{Projects}} -->
+</div>
+</body>
+</html>

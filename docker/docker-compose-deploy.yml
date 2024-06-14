@@ -1,0 +1,42 @@
+version: '3.1'
+
+services:
+  profiler:
+    container_name: "profiler"
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.management.rule=Host(`profile.simonfischer.dev`)"
+      - "traefik.http.routers.management.entrypoints=websecure"
+      - "traefik.http.routers.management.tls.certresolver=lets-encrypt"
+    networks:
+      - traefik
+      - profiler
+
+  profiler-database:
+    container_name: "profiler-database"
+    image: mysql:5.7
+    command: --default-authentication-plugin=mysql_native_password
+    restart: on-failure
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: profiler-db
+      TZ: Europe/Berlin
+    volumes:
+      - profiler_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    labels:
+      - traefik.enable=false
+    networks:
+      - profiler
+
+volumes:
+  profiler_data:
+
+networks:
+  traefik:
+    external: true
+  profiler:
