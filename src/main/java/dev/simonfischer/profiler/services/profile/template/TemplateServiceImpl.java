@@ -21,8 +21,12 @@ public class TemplateServiceImpl implements TemplateService{
 
         for (Map.Entry<String, Object> entry : replacements.entrySet()) {
             if (!(entry.getValue() instanceof Collection<?>)) {
-                html = html.replace(entry.getKey(), entry.getValue().toString());
-                continue;
+                if (entry.getValue() != null) {
+                    html = html.replace(entry.getKey(), entry.getValue().toString());
+                    continue;
+                }
+
+                System.err.println("WARNING: No value for key " + entry.getKey());
             }
 
             html = replacePlaceholderLoop(html, entry);
@@ -82,6 +86,10 @@ public class TemplateServiceImpl implements TemplateService{
         int endIdx = html.indexOf(endComment);
 
         if (startIdx == -1 || endIdx == -1 || !(parameters.getValue() instanceof Collection<?>)) {
+            if (startIdx == -1 || endIdx == -1) {
+                System.out.println("WARNING: Placeholder " + parameters.getKey() + " not found");
+            }
+
             return html;
         }
 
@@ -97,7 +105,13 @@ public class TemplateServiceImpl implements TemplateService{
                     blockToAppend = new StringBuilder(replacePlaceholderLoop(blockToAppend.toString(), entry));
                 } else {
                     blockToAppend = cleanHtml(blockToAppend, iterationList, entry, index);
-                    blockToAppend = new StringBuilder(blockToAppend.toString().replace(entry.getKey(), entry.getValue().toString()));
+
+                    if(entry.getValue() != null) {
+                        blockToAppend = new StringBuilder(blockToAppend.toString().replace(entry.getKey(), entry.getValue().toString()));
+                        continue;
+                    }
+
+                    System.err.println("WARNING: No Value found for " + entry.getKey());
                 }
             }
 
