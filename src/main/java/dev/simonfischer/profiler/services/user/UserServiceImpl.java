@@ -10,14 +10,17 @@ import dev.simonfischer.profiler.services.keycloak.KeycloakAccountService;
 import dev.simonfischer.profiler.models.dto.keycloak.KeycloakUser;
 import dev.simonfischer.profiler.models.exception.entity.AuthenticationException;
 import dev.simonfischer.profiler.models.exception.entity.InternalServerException;
+import org.apache.commons.io.IOUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+
+import java.util.*;
 
 
 @Service
@@ -49,14 +52,14 @@ public class UserServiceImpl implements UserService {
         throw new AuthenticationException("User is not authenticated");
     }
 
-    public void updateUser(UserDto user) {
+    public void updateUser(UserDto user, MultipartFile image) {
         KeycloakUser keycloakUser = modelMapper.map(user, KeycloakUser.class);
         Map<String, List<String>> attributeMap = new HashMap<>();
 
-        attributeMap.put("avatar", Collections.singletonList(user.getAttributes().getAvatar()));
         attributeMap.put("description", Collections.singletonList(user.getAttributes().getDescription()));
         attributeMap.put("location", Collections.singletonList(user.getAttributes().getLocation()));
         attributeMap.put("bornOn", Collections.singletonList(user.getAttributes().getBornOn()));
+        attributeMap.put("avatar", Collections.singletonList(uploadAvatar(image)));
 
         Map<String, Object> links = user.getAttributes().getLinks();
 
@@ -74,6 +77,20 @@ public class UserServiceImpl implements UserService {
             System.err.println(e.getMessage());
             throw new InternalServerException("There was an error saving the keycloak user");
         }
+    }
+
+    public byte[] getAvatar(String imageId) {
+        byte[] avatar;
+        InputStream avatarStream;
+        avatarStream = Objects.requireNonNull(getClass().getResourceAsStream("/assets/profileImages/" + imageId));
+        try {
+            avatar = IOUtils.toByteArray(avatarStream);
+        } catch (IOException e) {
+            System.err.println(e.getMessage());
+            throw new InternalServerException("There was an error getting the avatar");
+        }
+
+        return avatar;
     }
 
     public UserDto mapKeycloakUserToUserDto(KeycloakUser keycloakUser) {
@@ -112,5 +129,21 @@ public class UserServiceImpl implements UserService {
             return list.get(0);
         }
         return null;
+    }
+
+    private String uploadAvatar(MultipartFile image) {
+        String imageId = String.valueOf(new Random().nextInt(100000));
+        String imagePath =
+                Objects.requireNonNull(getClass().getResource("/assets/profileImages/")).getPath() + imageId + ".jpeg";
+
+        try {
+            File file = new File(imagePath);
+            image.transferTo(file);
+        } catch (IOException e) {
+            System.err.println(e.getMessage());
+            throw new InternalServerException("There was an error uploading the avatar");
+        }
+
+        return imagePath;
     }
 }
