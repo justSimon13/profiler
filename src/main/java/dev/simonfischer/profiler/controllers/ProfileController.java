@@ -16,7 +16,7 @@ public class ProfileController {
     private ProfileService profileService;
 
     @RequestMapping(value = "/public", method = RequestMethod.POST, consumes = {"multipart/form-data"}, produces = "application/pdf")
-    public ResponseEntity<byte[]> downloadPublicProfile(@RequestPart("profilePublicDto") ProfileDto profileDto, @RequestPart("file") MultipartFile image) {
+    public ResponseEntity<byte[]> downloadPublicProfile(@RequestPart("profilePublic") ProfileDto profileDto, @RequestPart(value = "image") MultipartFile image) {
         byte[] file = profileService.getPublicProfilePdf(profileDto, image);
         return new ResponseEntity<>(file, HttpStatus.OK);
     }

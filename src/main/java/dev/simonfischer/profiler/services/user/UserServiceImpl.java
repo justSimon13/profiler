@@ -65,6 +65,12 @@ public class UserServiceImpl implements UserService {
         attributeMap.put("bornOn", Collections.singletonList(user.getAttributes().getBornOn()));
         attributeMap.put("avatar", Collections.singletonList(uploadAvatar(image, user.getAttributes().getAvatar())));
 
+        if (image != null) {
+            attributeMap.put("avatar", Collections.singletonList(uploadAvatar(image, user.getAttributes().getAvatar())));
+        } else {
+            attributeMap.put("avatar", Collections.singletonList(user.getAttributes().getAvatar()));
+        }
+
         Map<String, Object> links = user.getAttributes().getLinks();
 
         try {
@@ -140,6 +146,15 @@ public class UserServiceImpl implements UserService {
         String imageId = String.valueOf(new Random().nextInt(100000));
         String directoryPath =
                 Objects.requireNonNull(getClass().getResource("/assets/profileImages/")).getPath();
+
+        File directory = new File(directoryPath);
+        if (!directory.exists()) {
+            boolean success = directory.mkdirs();
+            if (!success) {
+                System.err.println("Failed to create directory");
+                throw new InternalServerException("Failed to create directory");
+            }
+        }
 
         try {
             if (lastImgUrl != null && !lastImgUrl.isEmpty()) {
