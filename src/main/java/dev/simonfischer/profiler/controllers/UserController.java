@@ -23,7 +23,7 @@ public class UserController {
     }
 
     @RequestMapping(value = "", method = RequestMethod.POST, produces = "application/json")
-    public ResponseEntity<String> updateUser(@RequestPart("userData") UserDto user, @RequestPart("image") MultipartFile image) {
+    public ResponseEntity<String> updateUser(@RequestPart("userData") UserDto user, @RequestPart(value = "image", required = false) MultipartFile image) {
         userService.updateUser(user, image);
         return new ResponseEntity<>("User updated successfully", HttpStatus.OK);
     }
