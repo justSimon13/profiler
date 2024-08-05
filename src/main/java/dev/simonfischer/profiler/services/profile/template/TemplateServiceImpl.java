@@ -52,9 +52,9 @@ public class TemplateServiceImpl implements TemplateService {
      * @return The LinkedHashMap representing the placeholder map for the profile.
      */
     private LinkedHashMap<String, Object> getPlaceholderForProfile(ProfileDto profileDto) {
-        serverUrl = serverUrl + "user/avatar/";
-        String lastImgName = profileDto.getUser().getAttributes().getAvatar().substring(serverUrl.length());
-        String image = Objects.requireNonNull(getClass().getResource("/assets/profileImages/" + lastImgName)).getPath();
+        String serverUrlTmp = serverUrl + "user/avatar/";
+        String lastImgName = profileDto.getUser().getAttributes().getAvatar().substring(serverUrlTmp.length());
+        String image = Objects.requireNonNull(getClass().getResource("/static/images/" + lastImgName)).getPath();
         LinkedHashMap<String, Object> profilePlaceholder = new LinkedHashMap<>();
 
         profilePlaceholder.put("{{avatar}}", image);

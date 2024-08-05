@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.simonfischer.profiler.models.dto.AttributesDto;
 import dev.simonfischer.profiler.models.dto.UserDto;
 import dev.simonfischer.profiler.models.enumeratio.AccountRole;
+import dev.simonfischer.profiler.models.exception.entity.ItemNotFoundException;
 import dev.simonfischer.profiler.services.keycloak.KeycloakAccountService;
 import dev.simonfischer.profiler.models.dto.keycloak.KeycloakUser;
 import dev.simonfischer.profiler.models.exception.entity.AuthenticationException;
@@ -14,6 +15,7 @@ import org.apache.commons.io.IOUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,6 +23,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 
@@ -63,7 +68,6 @@ public class UserServiceImpl implements UserService {
         attributeMap.put("description", Collections.singletonList(user.getAttributes().getDescription()));
         attributeMap.put("location", Collections.singletonList(user.getAttributes().getLocation()));
         attributeMap.put("bornOn", Collections.singletonList(user.getAttributes().getBornOn()));
-        attributeMap.put("avatar", Collections.singletonList(uploadAvatar(image, user.getAttributes().getAvatar())));
 
         if (image != null) {
             attributeMap.put("avatar", Collections.singletonList(uploadAvatar(image, user.getAttributes().getAvatar())));
@@ -90,17 +94,20 @@ public class UserServiceImpl implements UserService {
     }
 
     public byte[] getAvatar(String imageId) {
-        byte[] avatar;
-        InputStream avatarStream;
-        avatarStream = Objects.requireNonNull(getClass().getResourceAsStream("/assets/profileImages/" + imageId));
-        try {
-            avatar = IOUtils.toByteArray(avatarStream);
-        } catch (IOException e) {
-            System.err.println(e.getMessage());
-            throw new InternalServerException("There was an error getting the avatar");
-        }
+        Path uploadPath = Path.of("src/main/resources/static/images");
+        Path newImagePath = uploadPath.resolve(imageId);
 
-        return avatar;
+        if (Files.exists(newImagePath)) {
+            try {
+                return Files.readAllBytes(newImagePath);
+            } catch (IOException e) {
+                System.err.println(e.getMessage());
+                throw new InternalServerException("There was an error reading the avatar image");
+            }
+
+        } else {
+            throw new ItemNotFoundException("Image " + imageId + " not found");
+        }
     }
 
     public UserDto mapKeycloakUserToUserDto(KeycloakUser keycloakUser) {
@@ -142,40 +149,32 @@ public class UserServiceImpl implements UserService {
     }
 
     private String uploadAvatar(MultipartFile image, String lastImgUrl) {
-        serverUrl = serverUrl + "user/avatar/";
-        String imageId = String.valueOf(new Random().nextInt(100000));
-        String directoryPath =
-                Objects.requireNonNull(getClass().getResource("/assets/profileImages/")).getPath();
+        String serverUrlTmp = serverUrl + "user/avatar/";
+        String uniqueFileName = UUID.randomUUID() + "_" + image.getOriginalFilename();
 
-        File directory = new File(directoryPath);
-        if (!directory.exists()) {
-            boolean success = directory.mkdirs();
-            if (!success) {
-                System.err.println("Failed to create directory");
-                throw new InternalServerException("Failed to create directory");
-            }
-        }
+        Path uploadPath = Path.of("src/main/resources/static/images");
+        Path newImagePath = uploadPath.resolve(uniqueFileName);
 
         try {
-            if (lastImgUrl != null && !lastImgUrl.isEmpty()) {
-                String lastImgPath = lastImgUrl.substring(serverUrl.length());
-                File lastImgFile = new File(directoryPath + lastImgPath);
-                boolean success = lastImgFile.delete();
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
 
-                if (!success) {
-                    System.err.println("Failed to delete the last image file");
-                    throw new InternalServerException("Failed to delete the last image file");
+            if (lastImgUrl != null && !lastImgUrl.isEmpty()) {
+                String lastImageId = lastImgUrl.substring(serverUrlTmp.length());
+                Path oldImagePath = uploadPath.resolve(lastImageId);
+
+                if (Files.exists(oldImagePath)) {
+                    Files.delete(oldImagePath);
                 }
             }
 
-            File file = new File(directoryPath + imageId + ".jpeg");
-            image.transferTo(file);
+            Files.copy(image.getInputStream(), newImagePath, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             System.err.println(e.getMessage());
             throw new InternalServerException("There was an error uploading the avatar");
         }
 
-
-        return serverUrl +  imageId + ".jpeg";
+        return serverUrlTmp +  uniqueFileName;
     }
 }

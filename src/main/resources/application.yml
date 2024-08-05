@@ -4,12 +4,13 @@ server:
     include-message: always
   servlet:
     context-path: "/api"
+  url: "http://localhost:8085/api/"
 
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/profiler-db
     username: root
-    password: password
+    password: 6Z9JrWN44Q63
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
