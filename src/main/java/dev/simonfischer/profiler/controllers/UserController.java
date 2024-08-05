@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 
 @RestController
@@ -22,8 +23,14 @@ public class UserController {
     }
 
     @RequestMapping(value = "", method = RequestMethod.POST, produces = "application/json")
-    public ResponseEntity<String> updateUser(@RequestBody UserDto user) {
-        userService.updateUser(user);
+    public ResponseEntity<String> updateUser(@RequestPart("userData") UserDto user, @RequestPart("image") MultipartFile image) {
+        userService.updateUser(user, image);
         return new ResponseEntity<>("User updated successfully", HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/avatar/{imageId}", method = RequestMethod.GET, produces = {"image/jpeg", "image/png"})
+    public ResponseEntity<byte[]> getAvatar(@PathVariable String imageId) {
+        byte[] file = userService.getAvatar(imageId);
+        return new ResponseEntity<>(file, HttpStatus.OK);
     }
 }
