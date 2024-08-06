@@ -54,11 +54,11 @@ class SecurityConfig {
                 .anonymous(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth ->
                         auth
-//                                .requestMatchers("/profile/**").permitAll()
-//                                .requestMatchers("/user/avatar/**").permitAll()
-//                                .requestMatchers("/swagger-ui/**").permitAll()
-//                                .requestMatchers("/v3/api-docs/**").permitAll()
-                                .anyRequest().permitAll())
+                                .requestMatchers("/profile/public").permitAll()
+                                .requestMatchers("/user/avatar/**").permitAll()
+                                .requestMatchers("/swagger-ui/**").permitAll()
+                                .requestMatchers("/v3/api-docs/**").permitAll()
+                                .anyRequest().authenticated())
                 .oauth2ResourceServer((oauth2) -> oauth2
                         .jwt(Customizer.withDefaults()));
         http.cors(Customizer.withDefaults());

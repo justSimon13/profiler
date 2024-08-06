@@ -6,7 +6,6 @@ import dev.simonfischer.profiler.models.dto.ProfileDto;
 import dev.simonfischer.profiler.models.dto.ProjectDto;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -16,9 +15,6 @@ import java.util.*;
 
 @Service
 public class TemplateServiceImpl implements TemplateService {
-
-    @Value("${server.url}")
-    private String serverUrl;
 
     public String replacePlaceholder(String html, ProfileDto profileDto) {
         Map<String, Object> replacements = getPlaceholderForProfile(profileDto);
@@ -52,12 +48,9 @@ public class TemplateServiceImpl implements TemplateService {
      * @return The LinkedHashMap representing the placeholder map for the profile.
      */
     private LinkedHashMap<String, Object> getPlaceholderForProfile(ProfileDto profileDto) {
-        String serverUrlTmp = serverUrl + "user/avatar/";
-        String lastImgName = profileDto.getUser().getAttributes().getAvatar().substring(serverUrlTmp.length());
-        String image = Objects.requireNonNull(getClass().getResource("/static/images/" + lastImgName)).getPath();
         LinkedHashMap<String, Object> profilePlaceholder = new LinkedHashMap<>();
 
-        profilePlaceholder.put("{{avatar}}", image);
+        profilePlaceholder.put("{{avatar}}", profileDto.getUser().getAttributes().getAvatar());
         profilePlaceholder.put("{{firstName}}", profileDto.getUser().getFirstName());
         profilePlaceholder.put("{{lastName}}", profileDto.getUser().getLastName());
         profilePlaceholder.put("{{description}}", profileDto.getUser().getAttributes().getDescription());

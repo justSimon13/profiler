@@ -13,6 +13,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 
@@ -51,46 +54,45 @@ public class ProfileService {
     }
 
     public byte[] getPublicProfilePdf(ProfileDto profileDto, MultipartFile image) {
-        File imageFile = saveImageFile(image);
-        profileDto.getUser().getAttributes().setAvatar(imageFile.getName());
+        Path savedImageFilePath = saveImageFile(image);
+        profileDto.getUser().getAttributes().setAvatar(savedImageFilePath.toUri().getPath());
 
         String populatedTemplate = templateService.replacePlaceholder(getDefaultTemplate(), profileDto);
         byte[] profileBytes = pdfService.getBytePdf(populatedTemplate);
-        deleteImageFile(imageFile);
+
+        deleteImageFile(savedImageFilePath);
 
         return profileBytes;
     }
 
     private String getDefaultTemplate() {
-        final String TEMPLATE_PATH = "/templates/defaultProfileTemplate.html";
-        File templateFile = getFileFromClasspath(TEMPLATE_PATH);
+        URL url = getClass().getResource("/templates/defaultProfileTemplate.html");
+        String filepath = Objects.requireNonNull(url, "Resource not found: " + "/templates/defaultProfileTemplate.html").getPath();
+        File templateFile = new File(filepath);
         return convertFileToXhtml(templateFile);
     }
 
-    private File saveImageFile(MultipartFile image) {
-        final String IMAGES_PATH = "/assets/profileImages/";
-        String imageFilename = UUID.randomUUID() + ".jpg";
-        String imageFilepath = getFileFromClasspath(IMAGES_PATH).getPath() + "/" + imageFilename;
-        File imageFile = new File(imageFilepath);
+    private Path saveImageFile(MultipartFile image) {
+        String uniqueFileName = UUID.randomUUID() + "_tmp_" + image.getOriginalFilename();
+        Path uploadPath = Path.of("src/main/resources/static/images");
+        Path newImagePath = uploadPath.resolve(uniqueFileName);
+
         try {
-            image.transferTo(imageFile);
+            Files.copy(image.getInputStream(), newImagePath, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             throw new IllegalStateException("Issue while storing the image file", e);
         }
-        return imageFile;
+
+        return newImagePath;
     }
 
-    private void deleteImageFile(File imageFile) {
-        boolean deleted = imageFile.delete();
-        if (!deleted) {
-            System.err.println("image could not be deleted.");
+    private void deleteImageFile(Path imageFilePath) {
+        try {
+            Files.delete(imageFilePath);
+        } catch (IOException e) {
+            System.err.println("image could not be deleted." + e.getMessage());
+            throw new InternalServerException("image could not be deleted", e);
         }
-    }
-
-    private File getFileFromClasspath(String path) {
-        URL url = getClass().getResource(path);
-        String filepath = Objects.requireNonNull(url, "Resource not found: " + path).getPath();
-        return new File(filepath);
     }
 
     private String convertFileToXhtml(File file) {
