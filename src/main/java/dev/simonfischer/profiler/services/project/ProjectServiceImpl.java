@@ -1,8 +1,5 @@
 package dev.simonfischer.profiler.services.project;
 
-import dev.simonfischer.profiler.models.dto.KnowledgeDto;
-import dev.simonfischer.profiler.models.dto.ProjectDto;
-import dev.simonfischer.profiler.models.dto.ProjectListDto;
 import dev.simonfischer.profiler.models.entity.Knowledge;
 import dev.simonfischer.profiler.models.entity.Project;
 import dev.simonfischer.profiler.models.entity.ProjectKnowledge;
@@ -36,11 +33,9 @@ public class ProjectServiceImpl implements ProjectService {
     private ModelMapper modelMapper;
 
 
-    public void saveProject(ProjectDto projectDto) {
-        Project project = modelMapper.map(projectDto, Project.class);
-        List<ProjectKnowledge> projectKnowledgeList = createProjectKnowledgeList(projectDto.getKnowledgeList(), project);
-
+    public void saveProject(Project project, List<Knowledge> knowledgeList) {
         try {
+            List<ProjectKnowledge> projectKnowledgeList = createProjectKnowledgeList(knowledgeList, project);
             projectRepository.save(project);
             projectKnowledgeRepository.saveAll(projectKnowledgeList);
         } catch (RuntimeException e) {
@@ -49,85 +44,62 @@ public class ProjectServiceImpl implements ProjectService {
         }
     }
 
-    public void updateProject(ProjectDto projectDto) {
-        Optional<Project> project = projectRepository.findById(projectDto.getId());
+    public void updateProject(Project project, List<Knowledge> knowledgeList) {
+        Optional<Project> projectDb = projectRepository.findById(project.getId());
 
-        if (project.isEmpty()) {
+        if (projectDb.isEmpty()) {
             throw new ItemNotFoundException("Project not found");
         }
 
-        project.get().setName(projectDto.getName());
-        project.get().setCustomer(projectDto.getCustomer());
-        project.get().setDescription(projectDto.getDescription());
-        project.get().setStart(projectDto.getStart());
-        project.get().setEnd(projectDto.getEnd());
+        projectDb.get().setName(project.getName());
+        projectDb.get().setCustomer(project.getCustomer());
+        projectDb.get().setDescription(project.getDescription());
+        projectDb.get().setStart(project.getStart());
+        projectDb.get().setEnd(project.getEnd());
 
-        List<Knowledge> knowledgeList =
-                projectDto.getKnowledgeList().stream().map(knowledgeDto -> modelMapper.map(knowledgeDto, Knowledge.class)).toList();
         List<Knowledge> knowledgeListDb =
-                project.get().getProjectKnowledges().stream().map(ProjectKnowledge::getKnowledge).toList();
+                projectDb.get().getProjectKnowledges().stream().map(ProjectKnowledge::getKnowledge).toList();
 
         List<Long> idToDelete = GeneralUtility.getDifferences(knowledgeList, knowledgeListDb, Knowledge::getId);
         List<Long> idToSave = GeneralUtility.getDifferences(knowledgeListDb, knowledgeList, Knowledge::getId);
 
-        List<KnowledgeDto> knowledgeListNew = projectDto.getKnowledgeList().stream().filter(knowledge -> idToSave.contains(knowledge.getId())).toList();
-        List<ProjectKnowledge> projectKnowledgeList = createProjectKnowledgeList(knowledgeListNew, project.get());
+        List<Knowledge> knowledgeListNew = knowledgeList.stream().filter(knowledge -> idToSave.contains(knowledge.getId())).toList();
+        List<ProjectKnowledge> projectKnowledgeList = createProjectKnowledgeList(knowledgeListNew, projectDb.get());
 
         try {
-            deleteProjectKnowledgeById(project.get(), idToDelete, project.get().getProjectKnowledges());
-            projectRepository.save(project.get());
+            deleteProjectKnowledgeById(projectDb.get(), idToDelete, projectDb.get().getProjectKnowledges());
+            projectRepository.save(projectDb.get());
             projectKnowledgeRepository.saveAll(projectKnowledgeList);
         } catch (RuntimeException e) {
             throw new InternalServerException("Failed to update project knowledge for Project");
         }
     }
 
-    public ProjectDto getProjectById(Long projectId) {
+    public Project getProjectById(Long projectId) {
         Optional<Project> project = projectRepository.findById(projectId);
 
         if (project.isEmpty()) {
             throw new ItemNotFoundException("Project not found");
         }
 
-        ProjectDto projectDto = modelMapper.map(project, ProjectDto.class);
-        List<KnowledgeDto> knowledgeDtoList = project.get().getProjectKnowledges().stream()
-                .map(projectKnowledge -> modelMapper.map(projectKnowledge.getKnowledge(), KnowledgeDto.class))
-                .toList();
-        projectDto.setKnowledgeList(knowledgeDtoList);
-
-        return projectDto;
+        return project.get();
     }
 
-    public List<ProjectListDto> getProjectList() {
-        List<Project> projectListDtos = (List<Project>)projectRepository.findAll();
-
-        return projectListDtos.stream()
-                .map(project -> modelMapper.map(project, ProjectListDto.class))
-                .toList();
+    public List<Project> getProjectList() {
+        return  (List<Project>)projectRepository.findAll();
     }
 
-    public List<ProjectDto> getAllProjectDto() {
-        List<Long> projectIds = projectRepository.findAllIds();
-
-        List<ProjectDto> projectDtoList = new ArrayList<>();
-        for (Long projectId : projectIds) {
-            ProjectDto projectDto = getProjectById(projectId);
-            projectDtoList.add(projectDto);
-        }
-        return projectDtoList;
-    }
-
-    private List<ProjectKnowledge> createProjectKnowledgeList(List<KnowledgeDto> knowledgeList, Project project) {
+    private List<ProjectKnowledge> createProjectKnowledgeList(List<Knowledge> knowledgeList, Project project) {
         List<ProjectKnowledge> projectKnowledgeList = new ArrayList<>();
-        for (KnowledgeDto knowledgeDto : knowledgeList) {
+        for (Knowledge knowledge : knowledgeList) {
             ProjectKnowledge projectKnowledge = new ProjectKnowledge();
             projectKnowledge.setProject(project);
 
-            if (knowledgeDto.getId() != null) {
-                Optional<Knowledge> knowledgeOptional = knowledgeRepository.findById(knowledgeDto.getId());
+            if (knowledge.getId() != null) {
+                Optional<Knowledge> knowledgeOptional = knowledgeRepository.findById(knowledge.getId());
                 knowledgeOptional.ifPresent(projectKnowledge::setKnowledge);
             } else {
-                Knowledge savedKnowledge = knowledgeRepository.save(modelMapper.map(knowledgeDto, Knowledge.class));
+                Knowledge savedKnowledge = knowledgeRepository.save(knowledge);
                 projectKnowledge.setKnowledge(savedKnowledge);
             }
 

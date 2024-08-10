@@ -1,7 +1,9 @@
 package dev.simonfischer.profiler.controllers;
 
+import dev.simonfischer.profiler.models.entity.KnowledgeCategory;
 import dev.simonfischer.profiler.services.knowledge.KnowledgeService;
 import dev.simonfischer.profiler.models.dto.KnowledgeCategoryDto;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,15 +21,26 @@ public class KnowledgeController {
     @Autowired
     private KnowledgeService knowledgeService;
 
+    @Autowired
+    private ModelMapper modelMapper;
+
     @RequestMapping(value = "", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<List<KnowledgeCategoryDto>> getKnowledgeCategoryList() {
-        List<KnowledgeCategoryDto> knowledgeCategoryDtos = knowledgeService.getKnowledgeCategoryList();
+        List<KnowledgeCategoryDto> knowledgeCategoryDtos =
+                knowledgeService.getKnowledgeCategoryList()
+                        .stream()
+                        .map(knowledgeCategory -> modelMapper.map(knowledgeCategory, KnowledgeCategoryDto.class))
+                        .toList();
         return new ResponseEntity<>(knowledgeCategoryDtos, HttpStatus.OK);
     }
 
     @RequestMapping(value = "", method = RequestMethod.POST, consumes = "application/json")
     public ResponseEntity<String> updateKnowledgeCategoryList(@RequestBody List<KnowledgeCategoryDto> knowledgeCategoryDtos) {
-        knowledgeService.updateKnowledgeCategoryList(knowledgeCategoryDtos);
+        knowledgeService.updateKnowledgeCategoryList(
+                knowledgeCategoryDtos
+                        .stream()
+                        .map(knowledgeCategoryDto -> modelMapper.map(knowledgeCategoryDto, KnowledgeCategory.class))
+                        .toList());
         return new ResponseEntity<>("Knowledge updated successfully", HttpStatus.OK);
     }
 }

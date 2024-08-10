@@ -1,12 +1,12 @@
 package dev.simonfischer.profiler.services.keycloak;
 
-import dev.simonfischer.profiler.models.dto.keycloak.KeycloakUser;
+import dev.simonfischer.profiler.models.dto.keycloak.KeycloakUserDto;
 
 public interface KeycloakAccountService {
 
-    KeycloakUser getKeycloakUser();
+    KeycloakUserDto getKeycloakUser();
 
-    void updateKeycloakUser(KeycloakUser keycloakUser);
+    void updateKeycloakUser(KeycloakUserDto keycloakUserDto);
 
     boolean isAdmin();
 

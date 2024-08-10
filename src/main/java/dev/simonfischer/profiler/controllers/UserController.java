@@ -1,7 +1,9 @@
 package dev.simonfischer.profiler.controllers;
 
+import dev.simonfischer.profiler.models.entity.User;
 import dev.simonfischer.profiler.services.user.UserService;
 import dev.simonfischer.profiler.models.dto.UserDto;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,15 +18,18 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private ModelMapper modelMapper;
+
     @RequestMapping(value = "", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<UserDto> getUser() {
-        UserDto userDto = userService.getUser();
+        UserDto userDto = modelMapper.map(userService.getUser(), UserDto.class);
         return new ResponseEntity<>(userDto, HttpStatus.OK);
     }
 
     @RequestMapping(value = "", method = RequestMethod.POST, produces = "application/json")
     public ResponseEntity<String> updateUser(@RequestPart("userData") UserDto user, @RequestPart(value = "image", required = false) MultipartFile image) {
-        userService.updateUser(user, image);
+        userService.updateUser(modelMapper.map(user, User.class), image);
         return new ResponseEntity<>("User updated successfully", HttpStatus.OK);
     }
 

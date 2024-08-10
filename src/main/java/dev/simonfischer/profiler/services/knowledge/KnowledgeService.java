@@ -1,12 +1,12 @@
 package dev.simonfischer.profiler.services.knowledge;
 
-import dev.simonfischer.profiler.models.dto.KnowledgeCategoryDto;
+import dev.simonfischer.profiler.models.entity.KnowledgeCategory;
 
 import java.util.List;
 
 public interface KnowledgeService {
 
-    void updateKnowledgeCategoryList(List<KnowledgeCategoryDto> knowledgeCategoryDtos);
+    void updateKnowledgeCategoryList(List<KnowledgeCategory> knowledgeCategories);
 
-    List<KnowledgeCategoryDto> getKnowledgeCategoryList();
+    List<KnowledgeCategory> getKnowledgeCategoryList();
 }

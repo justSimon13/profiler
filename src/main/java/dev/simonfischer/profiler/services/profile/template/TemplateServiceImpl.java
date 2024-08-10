@@ -1,9 +1,7 @@
 package dev.simonfischer.profiler.services.profile.template;
 
-import dev.simonfischer.profiler.models.dto.KnowledgeCategoryDto;
-import dev.simonfischer.profiler.models.dto.KnowledgeDto;
-import dev.simonfischer.profiler.models.dto.ProfileDto;
-import dev.simonfischer.profiler.models.dto.ProjectDto;
+import dev.simonfischer.profiler.models.business.Profile;
+import dev.simonfischer.profiler.models.entity.*;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Service;
@@ -16,8 +14,8 @@ import java.util.*;
 @Service
 public class TemplateServiceImpl implements TemplateService {
 
-    public String replacePlaceholder(String html, ProfileDto profileDto) {
-        Map<String, Object> replacements = getPlaceholderForProfile(profileDto);
+    public String replacePlaceholder(String html, Profile profile) {
+        Map<String, Object> replacements = getPlaceholderForProfile(profile);
 
         for (Map.Entry<String, Object> entry : replacements.entrySet()) {
             if (!(entry.getValue() instanceof Collection<?>)) {
@@ -42,29 +40,29 @@ public class TemplateServiceImpl implements TemplateService {
     }
 
     /**
-     * Generates a placeholder map for a profile using the given ProfilePublicDto object.
+     * Generates a placeholder map for a profile using the given Profile object.
      *
-     * @param profileDto The ProfilePublicDto object containing the profile information.
+     * @param profile The Profile object containing the profile information.
      * @return The LinkedHashMap representing the placeholder map for the profile.
      */
-    private LinkedHashMap<String, Object> getPlaceholderForProfile(ProfileDto profileDto) {
+    private LinkedHashMap<String, Object> getPlaceholderForProfile(Profile profile) {
         LinkedHashMap<String, Object> profilePlaceholder = new LinkedHashMap<>();
 
-        profilePlaceholder.put("{{avatar}}", profileDto.getUser().getAttributes().getAvatar());
-        profilePlaceholder.put("{{firstName}}", profileDto.getUser().getFirstName());
-        profilePlaceholder.put("{{lastName}}", profileDto.getUser().getLastName());
-        profilePlaceholder.put("{{description}}", profileDto.getUser().getAttributes().getDescription());
-        profilePlaceholder.put("{{bornOn}}", profileDto.getUser().getAttributes().getBornOn());
-        profilePlaceholder.put("{{location}}", profileDto.getUser().getAttributes().getLocation());
-        profilePlaceholder.put("{{email}}", profileDto.getUser().getEmail());
+        profilePlaceholder.put("{{avatar}}", profile.getUser().getAttributes().getAvatar());
+        profilePlaceholder.put("{{firstName}}", profile.getUser().getFirstName());
+        profilePlaceholder.put("{{lastName}}", profile.getUser().getLastName());
+        profilePlaceholder.put("{{description}}", profile.getUser().getAttributes().getDescription());
+        profilePlaceholder.put("{{bornOn}}", profile.getUser().getAttributes().getBornOn());
+        profilePlaceholder.put("{{location}}", profile.getUser().getAttributes().getLocation());
+        profilePlaceholder.put("{{email}}", profile.getUser().getEmail());
 
-        List<LinkedHashMap<String, Object>> linkPlaceholder = getPlaceholderForLinks(profileDto.getUser().getAttributes().getLinks());
+        List<LinkedHashMap<String, Object>> linkPlaceholder = getPlaceholderForLinks(profile.getUser().getAttributes().getLinks());
         profilePlaceholder.put("{{links}}", linkPlaceholder);
 
-        List<LinkedHashMap<String, Object>> knowledgeCategoriesPlaceholder = getPlaceholderForKnowledgeCategory(profileDto);
+        List<LinkedHashMap<String, Object>> knowledgeCategoriesPlaceholder = getPlaceholderForKnowledgeCategory(profile);
         profilePlaceholder.put("{{categoriesList}}", knowledgeCategoriesPlaceholder);
 
-        List<LinkedHashMap<String, Object>> placeholderForProfile = getPlaceholderForProject(profileDto);
+        List<LinkedHashMap<String, Object>> placeholderForProfile = getPlaceholderForProject(profile);
         profilePlaceholder.put("{{Projects}}", placeholderForProfile);
 
         return profilePlaceholder;
@@ -122,14 +120,14 @@ public class TemplateServiceImpl implements TemplateService {
     }
 
 
-    private List<LinkedHashMap<String, Object>> getPlaceholderForLinks(Map<String, Object> link) {
+    private List<LinkedHashMap<String, Object>> getPlaceholderForLinks(List<UserAttributesLinks> links) {
         List<LinkedHashMap<String, Object>> iterationList = new ArrayList<>();
 
-        for (Map.Entry<String, Object> linkEntry : link.entrySet()) {
+        for (UserAttributesLinks link : links) {
             LinkedHashMap<String, Object> linkPlaceholder = new LinkedHashMap<>();
 
-            linkPlaceholder.put("{{web_label}}", linkEntry.getKey());
-            linkPlaceholder.put("{{link}}", linkEntry.getValue());
+            linkPlaceholder.put("{{web_label}}", link.getName());
+            linkPlaceholder.put("{{link}}", link.getLink());
 
             iterationList.add(linkPlaceholder);
         }
@@ -137,22 +135,22 @@ public class TemplateServiceImpl implements TemplateService {
         return iterationList;
     }
 
-    private List<LinkedHashMap<String, Object>> getPlaceholderForKnowledgeCategory(ProfileDto profileDto) {
+    private List<LinkedHashMap<String, Object>> getPlaceholderForKnowledgeCategory(Profile profile) {
         List<LinkedHashMap<String, Object>> iterationList = new ArrayList<>();
 
-        for(int i = 0; i < profileDto.getKnowledgeCategoryList().size(); i++) {
+        for(int i = 0; i < profile.getKnowledgeCategoryList().size(); i++) {
             LinkedHashMap<String, Object> categoryPlaceholder = new LinkedHashMap<>();
             List<LinkedHashMap<String, Object>> iterationListDeep = new ArrayList<>();
 
-            KnowledgeCategoryDto knowledgeCategoryDto = profileDto.getKnowledgeCategoryList().get(i);
-            categoryPlaceholder.put("{{category_name}}", knowledgeCategoryDto.getName());
+            KnowledgeCategory knowledgeCategory = profile.getKnowledgeCategoryList().get(i);
+            categoryPlaceholder.put("{{category_name}}", knowledgeCategory.getName());
 
-            List<KnowledgeDto> knowledgeList = knowledgeCategoryDto.getKnowledgeList();
+            List<Knowledge> knowledgeList = knowledgeCategory.getKnowledgeList();
 
-            for (KnowledgeDto dto : knowledgeList) {
+            for (Knowledge knowledge : knowledgeList) {
                 LinkedHashMap<String, Object> knowledgePlaceholder = new LinkedHashMap<>();
 
-                knowledgePlaceholder.put("{{knowledge_name}}", dto.getName());
+                knowledgePlaceholder.put("{{knowledge_name}}", knowledge.getName());
                 iterationListDeep.add(knowledgePlaceholder);
             }
 
@@ -163,23 +161,23 @@ public class TemplateServiceImpl implements TemplateService {
         return iterationList;
     }
 
-    private List<LinkedHashMap<String, Object>> getPlaceholderForProject(ProfileDto profileDto) {
+    private List<LinkedHashMap<String, Object>> getPlaceholderForProject(Profile profile) {
         List<LinkedHashMap<String, Object>> iterationList = new ArrayList<>();
 
-        for (ProjectDto projectDto : profileDto.getProjectList()) {
+        for (Project project : profile.getProjectList()) {
             List<LinkedHashMap<String, Object>> iterationListDeep = new ArrayList<>();
             LinkedHashMap<String, Object> projectPlaceholder = new LinkedHashMap<>();
 
-            projectPlaceholder.put("{{project_name}}", projectDto.getName());
-            projectPlaceholder.put("{{project_customer}}", projectDto.getCustomer());
-            projectPlaceholder.put("{{project_description}}", projectDto.getDescription());
-            projectPlaceholder.put("{{project_start}}", projectDto.getStart());
-            projectPlaceholder.put("{{project_end}}", projectDto.getEnd());
+            projectPlaceholder.put("{{project_name}}", project.getName());
+            projectPlaceholder.put("{{project_customer}}", project.getCustomer());
+            projectPlaceholder.put("{{project_description}}", project.getDescription());
+            projectPlaceholder.put("{{project_start}}", project.getStart());
+            projectPlaceholder.put("{{project_end}}", project.getEnd());
 
-            for (KnowledgeDto dto : projectDto.getKnowledgeList()) {
+            for (ProjectKnowledge projectKnowledge : project.getProjectKnowledges()) {
                 LinkedHashMap<String, Object> knowledgePlaceholder = new LinkedHashMap<>();
 
-                knowledgePlaceholder.put("{{knowledge_name}}", dto.getName());
+                knowledgePlaceholder.put("{{knowledge_name}}", projectKnowledge.getKnowledge().getName());
                 iterationListDeep.add(knowledgePlaceholder);
             }
 

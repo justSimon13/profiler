@@ -1,13 +1,14 @@
 package dev.simonfischer.profiler.services.user;
 
-import dev.simonfischer.profiler.models.dto.UserDto;
+
+import dev.simonfischer.profiler.models.entity.User;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface UserService {
 
-    UserDto getUser();
+    User getUser();
 
-    void updateUser(UserDto user, MultipartFile image);
+    void updateUser(User user, MultipartFile image);
 
     byte[] getAvatar(String imageId);
 }

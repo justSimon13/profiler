@@ -1,6 +1,6 @@
 package dev.simonfischer.profiler.services.keycloak;
 
-import dev.simonfischer.profiler.models.dto.keycloak.KeycloakUser;
+import dev.simonfischer.profiler.models.dto.keycloak.KeycloakUserDto;
 import dev.simonfischer.profiler.models.exception.entity.AuthenticationException;
 import dev.simonfischer.profiler.models.exception.entity.InternalServerException;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,8 +13,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
 
 @Component
 public class KeycloakAccountServiceImpl implements KeycloakAccountService {
@@ -30,13 +28,13 @@ public class KeycloakAccountServiceImpl implements KeycloakAccountService {
     private final RestTemplate restTemplate = new RestTemplate();
 
 
-    public KeycloakUser getKeycloakUser() {
+    public KeycloakUserDto getKeycloakUser() {
         HttpHeaders headers = getHttpHeaders();
         HttpEntity<String> entity = new HttpEntity<>(headers);
         URI url = getRequestUrl();
-        ResponseEntity<KeycloakUser> response;
+        ResponseEntity<KeycloakUserDto> response;
 
-        response = restTemplate.exchange(url, HttpMethod.GET, entity, KeycloakUser.class);
+        response = restTemplate.exchange(url, HttpMethod.GET, entity, KeycloakUserDto.class);
 
         if (!response.getStatusCode().is2xxSuccessful()) {
             System.err.println("HTTP Status Code: " + response.getStatusCode());
@@ -47,10 +45,9 @@ public class KeycloakAccountServiceImpl implements KeycloakAccountService {
         return response.getBody();
     }
 
-    public void updateKeycloakUser(KeycloakUser keycloakUser) {
+    public void updateKeycloakUser(KeycloakUserDto keycloakUserDto) {
         HttpHeaders headers = getHttpHeaders();
-        Map<String, Object> params = buildParams(keycloakUser);
-        HttpEntity<Map<String, Object>> request = new HttpEntity<>(params, headers);
+        HttpEntity<KeycloakUserDto> request = new HttpEntity<>(keycloakUserDto, headers);
         ResponseEntity<String> response = restTemplate.exchange(getRequestUrl(), HttpMethod.POST, request, String.class);
 
         if (!response.getStatusCode().is2xxSuccessful()) {
@@ -107,28 +104,5 @@ public class KeycloakAccountServiceImpl implements KeycloakAccountService {
 
     private Authentication getAuthentication() {
         return SecurityContextHolder.getContext().getAuthentication();
-    }
-
-    private Map<String, Object> buildAttributes(KeycloakUser keycloakUser) {
-        Map<String, Object> attributes = new HashMap<>();
-
-        attributes.put("bornOn", keycloakUser.getAttributes().get("bornOn"));
-        attributes.put("location", keycloakUser.getAttributes().get("location"));
-        attributes.put("description", keycloakUser.getAttributes().get("description"));
-        attributes.put("avatar", keycloakUser.getAttributes().get("avatar"));
-        attributes.put("links", keycloakUser.getAttributes().get("links"));
-
-        return attributes;
-    }
-
-    private Map<String, Object> buildParams(KeycloakUser keycloakUser) {
-        Map<String, Object> params = new HashMap<>();
-
-        params.put("firstName", keycloakUser.getFirstName());
-        params.put("lastName", keycloakUser.getLastName());
-        params.put("email", keycloakUser.getEmail());
-        params.put("attributes", buildAttributes(keycloakUser));
-
-        return params;
     }
 }
